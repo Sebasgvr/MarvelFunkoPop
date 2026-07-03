@@ -28,21 +28,18 @@
 
       <!-- Navigation -->
       <nav class="nav">
-        <a href="../index.php#coleccion">Colección</a>
-        <a href="../index.php#heroes">Héroes</a>
-        <a href="../index.php#villanos">Villanos</a>
-        <a href="../index.php#exclusivos">Exclusivos</a>
-        <a href="../index.php#novedades">Novedades</a>
+        <a href="../index.php">Inicio</a>
+        <a href="coleccion.php">Colección</a>
       </nav>
 
       <!-- Icons -->
       <div class="header-icons">
-        <button class="icon-btn" aria-label="Buscar">
+        <a href="coleccion.php" class="icon-btn" aria-label="Buscar">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.3-4.3"></path>
           </svg>
-        </button>
+        </a>
         <!-- Account Dropdown -->
         <div class="account-menu">
           <button class="icon-btn account-btn" aria-label="Mi cuenta">
@@ -248,11 +245,8 @@
         </button>
       </div>
       <nav class="mobile-drawer-nav">
-        <a href="../index.php#coleccion" class="mobile-drawer-link">Colección</a>
-        <a href="../index.php#heroes" class="mobile-drawer-link">Héroes</a>
-        <a href="../index.php#villanos" class="mobile-drawer-link">Villanos</a>
-        <a href="../index.php#exclusivos" class="mobile-drawer-link">Exclusivos</a>
-        <a href="../index.php#novedades" class="mobile-drawer-link">Novedades</a>
+        <a href="../index.php" class="mobile-drawer-link">Inicio</a>
+        <a href="coleccion.php" class="mobile-drawer-link">Colección</a>
       </nav>
       <div class="mobile-drawer-footer">
         <a href="login.php" class="mobile-drawer-btn btn-login-mobile">Iniciar Sesión</a>

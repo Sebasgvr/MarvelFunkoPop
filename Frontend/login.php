@@ -1,4 +1,49 @@
+<?php
+session_start();
+
+// If already logged in, redirect to collection
+if (isset($_SESSION['usuario_id'])) {
+  header('Location: coleccion.php');
+  exit;
+}
+
+$authError = '';
+$authSuccess = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'], $_POST['password'])) {
+  $email    = trim($_POST['email']);
+  $password = $_POST['password'];
+
+  $host   = getenv('DB_HOST') ?: 'localhost';
+  $dbname = getenv('DB_NAME') ?: 'tienda_funkos';
+  $dbuser = getenv('DB_USER') ?: 'root';
+  $dbpass = getenv('DB_PASS') ?: '';
+
+  try {
+    $pdo = new PDO("mysql:host={$host};dbname={$dbname};charset=utf8mb4", $dbuser, $dbpass, [
+      PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+      PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ]);
+
+    $stmt = $pdo->prepare('SELECT id, nombre, contraseña FROM usuarios WHERE email = ? LIMIT 1');
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
+
+    if ($user && password_verify($password, $user['contraseña'])) {
+      $_SESSION['usuario_id']     = $user['id'];
+      $_SESSION['usuario_nombre'] = $user['nombre'];
+      header('Location: coleccion.php');
+      exit;
+    } else {
+      $authError = 'Email o contraseña incorrectos.';
+    }
+  } catch (Throwable $e) {
+    $authError = 'Error de conexión. Intenta más tarde.';
+  }
+}
+?>
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -28,21 +73,18 @@
 
       <!-- Navigation -->
       <nav class="nav">
-        <a href="../index.php#coleccion">Colección</a>
-        <a href="../index.php#heroes">Héroes</a>
-        <a href="../index.php#villanos">Villanos</a>
-        <a href="../index.php#exclusivos">Exclusivos</a>
-        <a href="../index.php#novedades">Novedades</a>
+        <a href="../index.php">Inicio</a>
+        <a href="coleccion.php">Colección</a>
       </nav>
 
       <!-- Icons -->
       <div class="header-icons">
-        <button class="icon-btn" aria-label="Buscar">
+        <a href="coleccion.php" class="icon-btn" aria-label="Buscar">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.3-4.3"></path>
           </svg>
-        </button>
+        </a>
         <!-- Account Dropdown -->
         <div class="account-menu">
           <button class="icon-btn account-btn" aria-label="Mi cuenta">
@@ -186,11 +228,8 @@
         </button>
       </div>
       <nav class="mobile-drawer-nav">
-        <a href="../index.php#coleccion" class="mobile-drawer-link">Colección</a>
-        <a href="../index.php#heroes" class="mobile-drawer-link">Héroes</a>
-        <a href="../index.php#villanos" class="mobile-drawer-link">Villanos</a>
-        <a href="../index.php#exclusivos" class="mobile-drawer-link">Exclusivos</a>
-        <a href="../index.php#novedades" class="mobile-drawer-link">Novedades</a>
+        <a href="../index.php" class="mobile-drawer-link">Inicio</a>
+        <a href="coleccion.php" class="mobile-drawer-link">Colección</a>
       </nav>
       <div class="mobile-drawer-footer">
         <a href="login.php" class="mobile-drawer-btn btn-login-mobile">Iniciar Sesión</a>
