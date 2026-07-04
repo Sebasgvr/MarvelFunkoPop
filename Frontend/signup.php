@@ -330,7 +330,7 @@
         }
       });
     }
-
+/*
     // Form confirmation password verification & mock submission
     const signupForm = document.getElementById('signup-form');
     const password = document.getElementById('password');
@@ -378,6 +378,106 @@
         }, 1800);
       });
     }
+  ee suspendido por ahora*/
+// Registro de usuario con conexión al backend
+const signupForm = document.getElementById('signup-form');
+const password = document.getElementById('password');
+const confirmPassword = document.getElementById('confirm_password');
+const authAlert = document.getElementById('auth-alert');
+
+if (signupForm) {
+  signupForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Ocultar alertas anteriores
+    authAlert.style.display = 'none';
+    password.classList.remove('form-input-error');
+    confirmPassword.classList.remove('form-input-error');
+
+    // Verificar que las contraseñas coincidan
+    if (password.value !== confirmPassword.value) {
+      password.classList.add('form-input-error');
+      confirmPassword.classList.add('form-input-error');
+      authAlert.style.display = 'flex';
+      authAlert.className = 'auth-alert auth-alert-error';
+      authAlert.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>Las contraseñas no coinciden.</span>
+      `;
+      confirmPassword.focus();
+      return;
+    }
+
+    // Preparar datos para enviar
+    const formData = {
+      nombre: document.getElementById('nombre').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      password: password.value,
+      telefono: document.getElementById('telefono').value.trim(),
+      direccion: document.getElementById('direccion').value.trim()
+    };
+
+    // Mostrar mensaje de carga
+    authAlert.style.display = 'flex';
+    authAlert.className = 'auth-alert auth-alert-info';
+    authAlert.innerHTML = `
+      <span>Registrando usuario...</span>
+    `;
+
+    // Enviar datos al backend
+    fetch('../Backend/api/registro.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        authAlert.style.display = 'flex';
+        authAlert.className = 'auth-alert auth-alert-success';
+        authAlert.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5"></path>
+          </svg>
+          <span>${data.message} Redirigiendo al login...</span>
+        `;
+        setTimeout(() => {
+          window.location.href = 'login.php';
+        }, 1800);
+      } else {
+        authAlert.style.display = 'flex';
+        authAlert.className = 'auth-alert auth-alert-error';
+        authAlert.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>${data.message}</span>
+        `;
+      }
+    })
+    .catch(error => {
+      authAlert.style.display = 'flex';
+      authAlert.className = 'auth-alert auth-alert-error';
+      authAlert.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>Error de conexión. Intenta más tarde.</span>
+      `;
+      console.error('Error:', error);
+    });
+  });
+}
 
     // Mobile drawer toggle functionality
     const mobileMenuToggle = document.getElementById('mobile-menu-toggle');

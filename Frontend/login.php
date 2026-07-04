@@ -1,49 +1,59 @@
 <?php
-session_start();
+// Iniciar sesión solo si no está activa
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'path' => '/tienda_funkos/',
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    session_start();
+}
 
-// If already logged in, redirect to collection
+// Si ya está logueado, redirigir a coleccion.php
 if (isset($_SESSION['usuario_id'])) {
-  header('Location: coleccion.php');
-  exit;
+    header('Location: coleccion.php');
+    exit;
 }
 
 $authError = '';
-$authSuccess = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'], $_POST['password'])) {
-  $email    = trim($_POST['email']);
-  $password = $_POST['password'];
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
 
-  $host   = getenv('DB_HOST') ?: 'localhost';
-  $dbname = getenv('DB_NAME') ?: 'tienda_funkos';
-  $dbuser = getenv('DB_USER') ?: 'root';
-  $dbpass = getenv('DB_PASS') ?: '';
+    // Conexión a la base de datos
+    $host = 'localhost';
+    $dbname = 'tienda_funkos';
+    $dbuser = 'root';
+    $dbpass = '';
 
-  try {
-    $pdo = new PDO("mysql:host={$host};dbname={$dbname};charset=utf8mb4", $dbuser, $dbpass, [
-      PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-      PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
+    try {
+        $pdo = new PDO("mysql:host={$host};dbname={$dbname};charset=utf8mb4", $dbuser, $dbpass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
 
-    $stmt = $pdo->prepare('SELECT id, nombre, contraseña FROM usuarios WHERE email = ? LIMIT 1');
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
+        $stmt = $pdo->prepare('SELECT id, nombre, contraseña FROM usuarios WHERE email = ? LIMIT 1');
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
 
-    if ($user && password_verify($password, $user['contraseña'])) {
-      $_SESSION['usuario_id']     = $user['id'];
-      $_SESSION['usuario_nombre'] = $user['nombre'];
-      header('Location: coleccion.php');
-      exit;
-    } else {
-      $authError = 'Email o contraseña incorrectos.';
+        if ($user && password_verify($password, $user['contraseña'])) {
+            // Guardar datos en sesión
+            $_SESSION['usuario_id'] = $user['id'];
+            $_SESSION['usuario_nombre'] = $user['nombre'];
+            // Redirigir a coleccion.php después de guardar la sesión
+            // Redirigir (solo se ejecuta si se elimina el exit de arriba)
+            header('Location: coleccion.php');
+            exit;
+        } else {
+            $authError = 'Email o contraseña incorrectos.';
+        }
+    } catch (Throwable $e) {
+        $authError = 'Error de conexión. Intenta más tarde.';
     }
-  } catch (Throwable $e) {
-    $authError = 'Error de conexión. Intenta más tarde.';
-  }
 }
 ?>
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -262,7 +272,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'], $_POST['pass
   <!-- ==========================================
        JAVASCRIPT FOR INTERACTION
        ========================================== -->
-  <script>
+ <script>
     // Password visibility toggle
     const togglePasswordBtn = document.getElementById('toggle-password');
     const passwordInput = document.getElementById('password');
@@ -312,34 +322,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'], $_POST['pass
       });
     }
 
-    // Client-side demo validation/alerts
-    const loginForm = document.getElementById('login-form');
-    const authAlert = document.getElementById('auth-alert');
-
-    if (loginForm) {
-      loginForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const email = document.getElementById('email').value;
-        const password = passwordInput.value;
-
-        if (email && password) {
-          authAlert.style.display = 'flex';
-          authAlert.className = 'auth-alert auth-alert-success';
-          authAlert.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 6 9 17l-5-5"></path>
-            </svg>
-            <span>Inicio de sesión exitoso. Redirigiendo...</span>
-          `;
-          
-          setTimeout(() => {
-            window.location.href = '../index.php';
-          }, 1500);
-        }
-      });
-    }
-
     // Mobile drawer toggle functionality
     const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
     const mobileDrawer = document.getElementById('mobile-drawer');
@@ -368,6 +350,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'], $_POST['pass
         link.addEventListener('click', closeMobileDrawer);
       });
     }
-  </script>
+</script>
 </body>
 </html>

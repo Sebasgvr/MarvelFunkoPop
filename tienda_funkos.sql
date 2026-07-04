@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 02-06-2026 a las 19:21:18
+-- Tiempo de generación: 04-07-2026 a las 20:08:03
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -46,6 +46,15 @@ CREATE TABLE `categorias` (
   `nombre` varchar(50) NOT NULL,
   `descripcion` varchar(200) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `categorias`
+--
+
+INSERT INTO `categorias` (`id`, `nombre`, `descripcion`) VALUES
+(1, 'Héroes', 'Personajes heroicos de Marvel'),
+(2, 'Villanos', 'Villanos del universo Marvel'),
+(3, 'Exclusivos', 'Ediciones limitadas y chase');
 
 -- --------------------------------------------------------
 
@@ -106,6 +115,20 @@ CREATE TABLE `productos` (
   `categoria_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `productos`
+--
+
+INSERT INTO `productos` (`id`, `nombre`, `descripcion`, `precio`, `stock`, `imagen`, `categoria_id`) VALUES
+(1, 'Iron Man Mark LXXXV', 'iron man', 24990.00, 40, 'https://http2.mlstatic.com/D_NQ_NP_898979-MLA91535240806_092025-O.webp', 1),
+(5, 'Thanos Infinity Gauntlet', 'thanos', 34990.00, 50, 'https://http2.mlstatic.com/D_Q_NP_856325-MLA95222298982_102025-O.webp', 2),
+(6, 'Spider-Man No Way Home', 'spiderman', 19990.00, 30, 'https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcTizzWshMC36pvu9HotiqEuVWNqo6R0TElIlma23ADERsyXJz-2w2I1HSWn_OwHUn8yBB6FHnBOn8-bK-s-X2wiRgNek2FQDw', 1),
+(7, 'Loki Variant', 'loki', 29990.00, 6, 'https://http2.mlstatic.com/D_NQ_NP_989071-MLA52060127296_102022-O.webp', 3),
+(8, 'Doctor Strange Multiverse', 'doctor strange', 27990.00, 10, 'https://http2.mlstatic.com/D_NQ_NP_2X_836426-MLA99232215881_112025-F.jpg', 1),
+(9, 'scarlet witch', 'scarlet witch', 29990.00, 40, 'https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcRqTUI5zq65bzTSIVZx0F60uAR4kV3BmRWQ_K3r0sqBN9i2to5Kk0PZdri5b-wZQS4F_pNdopv7ap6VHeAyKz24EshcqQKCLXHh-rBX-N8LC0Ud9Y6ZF4KXuIg', 1),
+(10, 'Green Goblin Classic', 'Green Goblin', 29000.00, 50, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStxMzROrrOndYo7ngipkUnap4loXx4m7SdmbN62e5VWA&s=10', 2),
+(11, 'Captain America Sam Wilson', 'captain', 24900.00, 0, 'https://m.media-amazon.com/images/I/71QV3CBy9DL._AC_UF894,1000_QL80_.jpg', 1);
+
 -- --------------------------------------------------------
 
 --
@@ -121,6 +144,13 @@ CREATE TABLE `usuarios` (
   `telefono` varchar(20) DEFAULT NULL,
   `fecha_registro` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `usuarios`
+--
+
+INSERT INTO `usuarios` (`id`, `nombre`, `email`, `contraseña`, `direccion`, `telefono`, `fecha_registro`) VALUES
+(1, 'ana', 'anadonaldson700@gmail.com', '$2y$10$UEd5m3nTYPfsoT4E3/h8U.jwIXcrIkghn4DfQF8h1XhyFdY40iI/a', '', '', '2026-07-04 00:55:46');
 
 --
 -- Índices para tablas volcadas
@@ -190,7 +220,7 @@ ALTER TABLE `carrito`
 -- AUTO_INCREMENT de la tabla `categorias`
 --
 ALTER TABLE `categorias`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_pedido`
@@ -214,13 +244,13 @@ ALTER TABLE `pedidos`
 -- AUTO_INCREMENT de la tabla `productos`
 --
 ALTER TABLE `productos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Restricciones para tablas volcadas
@@ -231,32 +261,39 @@ ALTER TABLE `usuarios`
 --
 ALTER TABLE `carrito`
   ADD CONSTRAINT `carrito_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `carrito_ibfk_2` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `carrito_ibfk_2` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `carrito_ibfk_3` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`),
+  ADD CONSTRAINT `carrito_ibfk_4` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`);
 
 --
 -- Filtros para la tabla `detalle_pedido`
 --
 ALTER TABLE `detalle_pedido`
   ADD CONSTRAINT `detalle_pedido_ibfk_1` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `detalle_pedido_ibfk_2` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `detalle_pedido_ibfk_2` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `detalle_pedido_ibfk_3` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`),
+  ADD CONSTRAINT `detalle_pedido_ibfk_4` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`);
 
 --
 -- Filtros para la tabla `pagos`
 --
 ALTER TABLE `pagos`
-  ADD CONSTRAINT `pagos_ibfk_1` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `pagos_ibfk_1` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `pagos_ibfk_2` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`);
 
 --
 -- Filtros para la tabla `pedidos`
 --
 ALTER TABLE `pedidos`
-  ADD CONSTRAINT `pedidos_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `pedidos_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `pedidos_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`);
 
 --
 -- Filtros para la tabla `productos`
 --
 ALTER TABLE `productos`
-  ADD CONSTRAINT `productos_ibfk_1` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `productos_ibfk_1` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `productos_ibfk_2` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

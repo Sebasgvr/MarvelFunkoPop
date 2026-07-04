@@ -1,18 +1,17 @@
 <?php
-session_start();
-$usuarioNombre = $_SESSION['usuario_nombre'] ?? null;
-$usuarioId     = $_SESSION['usuario_id']     ?? null;
+// Iniciar sesión solo si no está activa
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'path' => '/tienda_funkos/',
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    session_start();
+}
 
-$fallbackProducts = [
-  ['id' => 1, 'nombre' => 'Iron Man Mark LXXXV', 'categoria' => 'Heroes', 'precio' => 24990, 'imagen' => '', 'etiqueta' => 'Nuevo'],
-  ['id' => 2, 'nombre' => 'Thanos Infinity Gauntlet', 'categoria' => 'Villanos', 'precio' => 34990, 'imagen' => '', 'etiqueta' => 'Popular'],
-  ['id' => 3, 'nombre' => 'Spider-Man No Way Home', 'categoria' => 'Heroes', 'precio' => 19990, 'imagen' => '', 'etiqueta' => ''],
-  ['id' => 4, 'nombre' => 'Loki Variant', 'categoria' => 'Exclusivos', 'precio' => 29990, 'imagen' => '', 'etiqueta' => 'Chase'],
-  ['id' => 5, 'nombre' => 'Doctor Strange Multiverse', 'categoria' => 'Heroes', 'precio' => 27990, 'imagen' => '', 'etiqueta' => 'Nuevo'],
-  ['id' => 6, 'nombre' => 'Scarlet Witch', 'categoria' => 'Heroes', 'precio' => 26990, 'imagen' => '', 'etiqueta' => 'Nuevo'],
-  ['id' => 7, 'nombre' => 'Green Goblin Classic', 'categoria' => 'Villanos', 'precio' => 22990, 'imagen' => '', 'etiqueta' => 'Nuevo'],
-  ['id' => 8, 'nombre' => 'Captain America Sam Wilson', 'categoria' => 'Heroes', 'precio' => 24990, 'imagen' => '', 'etiqueta' => '']
-];
+
+$usuario_nombre = $_SESSION['usuario_nombre'] ?? null;
+$usuarioId     = $_SESSION['usuario_id']     ?? null;
 
 function firstAvailableColumn(array $columns, array $options) {
   foreach ($options as $option) {
@@ -36,7 +35,7 @@ function normalizeProduct(array $row, array $map) {
 
 function loadProductsFromDatabase() {
   $host = getenv('DB_HOST') ?: 'localhost';
-  $dbname = getenv('DB_NAME') ?: 'marvel_funkopop';
+  $dbname = getenv('DB_NAME') ?: 'tienda_funkos';
   $user = getenv('DB_USER') ?: 'root';
   $password = getenv('DB_PASS') ?: '';
 
@@ -46,37 +45,65 @@ function loadProductsFromDatabase() {
       PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
     ]);
 
+    // Verificar si la tabla productos existe
     $columns = $pdo->query('DESCRIBE productos')->fetchAll(PDO::FETCH_COLUMN);
     if (!$columns) {
       return [];
     }
 
-    $map = [
-      'id' => firstAvailableColumn($columns, ['id', 'id_producto', 'producto_id']),
-      'nombre' => firstAvailableColumn($columns, ['nombre', 'name', 'titulo', 'producto']),
-      'categoria' => firstAvailableColumn($columns, ['categoria', 'category', 'tipo']),
-      'precio' => firstAvailableColumn($columns, ['precio', 'price', 'valor']),
-      'imagen' => firstAvailableColumn($columns, ['imagen', 'image', 'foto', 'url_imagen']),
-      'etiqueta' => firstAvailableColumn($columns, ['etiqueta', 'badge', 'estado', 'tag'])
-    ];
+    // Verificar si tiene categoria_id (nuevo esquema) o categoria (viejo esquema)
+    $hasCategoriaId = in_array('categoria_id', $columns);
+    $hasCategoria = in_array('categoria', $columns);
 
-    $selectColumns = array_values(array_unique(array_filter($map)));
-    if (!$map['nombre'] || !$selectColumns) {
-      return [];
+    // Construir la consulta
+    if ($hasCategoriaId) {
+      // Nuevo esquema: usar JOIN con categorias
+      $query = "
+        SELECT p.*, c.nombre as categoria_nombre
+        FROM productos p
+        LEFT JOIN categorias c ON p.categoria_id = c.id
+        ORDER BY p.id DESC
+      ";
+      $rows = $pdo->query($query)->fetchAll();
+
+      return array_map(function ($row) {
+        return [
+          'id' => $row['id'] ?? '',
+          'nombre' => $row['nombre'] ?? 'Producto Marvel',
+          'categoria' => $row['categoria_nombre'] ?? 'Sin categoría',
+          'precio' => isset($row['precio']) ? (float) $row['precio'] : 0,
+          'imagen' => $row['imagen'] ?? '',
+          'etiqueta' => $row['etiqueta'] ?? ''
+        ];
+      }, $rows);
+    } else {
+      // Viejo esquema: usar el campo categoria directamente
+      $map = [
+        'id' => firstAvailableColumn($columns, ['id', 'id_producto', 'producto_id']),
+        'nombre' => firstAvailableColumn($columns, ['nombre', 'name', 'titulo', 'producto']),
+        'categoria' => firstAvailableColumn($columns, ['categoria', 'category', 'tipo']),
+        'precio' => firstAvailableColumn($columns, ['precio', 'price', 'valor']),
+        'imagen' => firstAvailableColumn($columns, ['imagen', 'image', 'foto', 'url_imagen']),
+        'etiqueta' => firstAvailableColumn($columns, ['etiqueta', 'badge', 'estado', 'tag'])
+      ];
+
+      $selectColumns = array_values(array_unique(array_filter($map)));
+      if (!$map['nombre'] || !$selectColumns) {
+        return [];
+      }
+
+      $orderColumn = $map['id'] ?: $map['nombre'];
+      $query = 'SELECT `' . implode('`, `', $selectColumns) . '` FROM productos ORDER BY `' . $orderColumn . '` DESC';
+      $rows = $pdo->query($query)->fetchAll();
+
+      return array_map(function ($row) use ($map) {
+        return normalizeProduct($row, $map);
+      }, $rows);
     }
-
-    $orderColumn = $map['id'] ?: $map['nombre'];
-    $query = 'SELECT `' . implode('`, `', $selectColumns) . '` FROM productos ORDER BY `' . $orderColumn . '` DESC';
-    $rows = $pdo->query($query)->fetchAll();
-
-    return array_map(function ($row) use ($map) {
-      return normalizeProduct($row, $map);
-    }, $rows);
   } catch (Throwable $error) {
     return [];
   }
 }
-
 function formatPrice($price) {
   return '$' . number_format((float) $price, 0, ',', '.');
 }
@@ -97,38 +124,47 @@ function productBadgeClass($label) {
   }
   return 'product-badge--nuevo';
 }
-
 $search = trim($_GET['buscar'] ?? '');
 $selectedCategory = trim($_GET['categoria'] ?? '');
 $selectedPrice = trim($_GET['precio'] ?? '');
-$products = loadProductsFromDatabase();
-$usingFallbackProducts = empty($products);
 
-if ($usingFallbackProducts) {
-  $products = $fallbackProducts;
+
+$products = loadProductsFromDatabase();
+
+// Si no hay productos en la BD, usar fallback
+if (empty($products)) {
+    $products = $fallbackProducts;
 }
 
+// Obtener categorías únicas de los productos
 $categories = array_values(array_unique(array_filter(array_map(function ($product) {
-  return $product['categoria'];
+    return $product['categoria'] ?? 'Sin categoría';
 }, $products))));
 sort($categories);
 
+// Filtrar productos
 $filteredProducts = array_values(array_filter($products, function ($product) use ($search, $selectedCategory, $selectedPrice) {
-  $matchesSearch = $search === '' || strpos(normalizeText($product['nombre'] . ' ' . $product['categoria']), normalizeText($search)) !== false;
-  $matchesCategory = $selectedCategory === '' || $product['categoria'] === $selectedCategory;
-  $price = (float) $product['precio'];
-  $matchesPrice = true;
+    // Filtro por búsqueda
+    $matchesSearch = $search === '' || strpos(normalizeText($product['nombre'] . ' ' . $product['categoria']), normalizeText($search)) !== false;
+    
+    // Filtro por categoría
+    $matchesCategory = $selectedCategory === '' || $product['categoria'] === $selectedCategory;
+    
+    // Filtro por precio
+    $price = (float) $product['precio'];
+    $matchesPrice = true;
 
-  if ($selectedPrice === 'hasta-25000') {
-    $matchesPrice = $price <= 25000;
-  } elseif ($selectedPrice === '25000-30000') {
-    $matchesPrice = $price > 25000 && $price <= 30000;
-  } elseif ($selectedPrice === 'mas-30000') {
-    $matchesPrice = $price > 30000;
-  }
+    if ($selectedPrice === 'hasta-25000') {
+        $matchesPrice = $price <= 25000;
+    } elseif ($selectedPrice === '25000-30000') {
+        $matchesPrice = $price > 25000 && $price <= 30000;
+    } elseif ($selectedPrice === 'mas-30000') {
+        $matchesPrice = $price > 30000;
+    }
 
-  return $matchesSearch && $matchesCategory && $matchesPrice;
+    return $matchesSearch && $matchesCategory && $matchesPrice;
 }));
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -185,8 +221,8 @@ $filteredProducts = array_values(array_filter($products, function ($product) use
         <!-- Account -->
         <div class="account-menu">
           <button class="icon-btn account-btn" aria-label="Mi cuenta">
-            <?php if ($usuarioNombre): ?>
-              <span class="user-greeting">Hola, <?php echo htmlspecialchars(explode(' ', $usuarioNombre)[0], ENT_QUOTES, 'UTF-8'); ?></span>
+            <?php if ($usuario_nombre): ?>
+              <span class="user-greeting">Hola, <?php echo htmlspecialchars(explode(' ', $usuario_nombre)[0], ENT_QUOTES, 'UTF-8'); ?></span>
             <?php else: ?>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
@@ -195,13 +231,13 @@ $filteredProducts = array_values(array_filter($products, function ($product) use
             <?php endif; ?>
           </button>
           <div class="account-dropdown">
-            <?php if ($usuarioNombre): ?>
+            <?php if ($usuario_nombre): ?>
               <div class="account-user-info">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                <span><?php echo htmlspecialchars($usuarioNombre, ENT_QUOTES, 'UTF-8'); ?></span>
+                <span><?php echo htmlspecialchars($usuario_nombre, ENT_QUOTES, 'UTF-8'); ?></span>
               </div>
               <a href="logout.php" class="account-btn-dropdown account-btn-logout">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
