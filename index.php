@@ -1,17 +1,17 @@
-<?php
-session_start();
-$usuarioNombre = $_SESSION['usuario_nombre'] ?? null;
 
-$fallbackProducts = [
-  ['id' => 1, 'nombre' => 'Iron Man Mark LXXXV', 'categoria' => 'Heroes', 'precio' => 24990, 'imagen' => '', 'etiqueta' => 'Nuevo'],
-  ['id' => 2, 'nombre' => 'Thanos Infinity Gauntlet', 'categoria' => 'Villanos', 'precio' => 34990, 'imagen' => '', 'etiqueta' => 'Popular'],
-  ['id' => 3, 'nombre' => 'Spider-Man No Way Home', 'categoria' => 'Heroes', 'precio' => 19990, 'imagen' => '', 'etiqueta' => ''],
-  ['id' => 4, 'nombre' => 'Loki Variant', 'categoria' => 'Exclusivos', 'precio' => 29990, 'imagen' => '', 'etiqueta' => 'Chase'],
-  ['id' => 5, 'nombre' => 'Doctor Strange Multiverse', 'categoria' => 'Heroes', 'precio' => 27990, 'imagen' => '', 'etiqueta' => 'Nuevo'],
-  ['id' => 6, 'nombre' => 'Scarlet Witch', 'categoria' => 'Heroes', 'precio' => 26990, 'imagen' => '', 'etiqueta' => 'Nuevo'],
-  ['id' => 7, 'nombre' => 'Green Goblin Classic', 'categoria' => 'Villanos', 'precio' => 22990, 'imagen' => '', 'etiqueta' => 'Nuevo'],
-  ['id' => 8, 'nombre' => 'Captain America Sam Wilson', 'categoria' => 'Heroes', 'precio' => 24990, 'imagen' => '', 'etiqueta' => '']
-];
+
+<?php
+// Iniciar sesión solo si no está activa
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'path' => '/tienda_funkos/',
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    session_start();
+}
+$usuario_nombre = $_SESSION['usuario_nombre'] ?? null;
+
 
 function firstAvailableColumn(array $columns, array $options) {
   foreach ($options as $option) {
@@ -35,7 +35,8 @@ function normalizeProduct(array $row, array $map) {
 
 function loadProductsFromDatabase() {
   $host = getenv('DB_HOST') ?: 'localhost';
-  $dbname = getenv('DB_NAME') ?: 'marvel_funkopop';
+  //gonzalo:marvel_funkopop 
+  $dbname = getenv('DB_NAME') ?: 'tienda_funkos';
   $user = getenv('DB_USER') ?: 'root';
   $password = getenv('DB_PASS') ?: '';
 
@@ -98,8 +99,25 @@ function productBadgeClass($label) {
 }
 
 $products = loadProductsFromDatabase();
-$usingFallbackProducts = empty($products);
+// Si no hay productos en la BD, usa el fallback
+if (!is_array($products)) {
+  $products = [];
+}
 
+if (!isset($fallbackProducts) || !is_array($fallbackProducts)) {
+  $fallbackProducts = [
+    [
+      'id' => 0,
+      'nombre' => 'Funko Ejemplo',
+      'categoria' => 'Coleccionables',
+      'precio' => 0,
+      'imagen' => '',
+      'etiqueta' => 'Nuevo'
+    ]
+  ];
+}
+
+$usingFallbackProducts = empty($products);
 if ($usingFallbackProducts) {
   $products = $fallbackProducts;
 }
@@ -161,8 +179,8 @@ $featuredProducts = array_slice($products, 0, 4);
         <!-- Account Dropdown -->
         <div class="account-menu">
           <button class="icon-btn account-btn" aria-label="Mi cuenta">
-            <?php if ($usuarioNombre): ?>
-              <span class="user-greeting">Hola, <?php echo htmlspecialchars(explode(' ', $usuarioNombre)[0], ENT_QUOTES, 'UTF-8'); ?></span>
+            <?php if ($usuario_nombre): ?>
+              <span class="user-greeting">Hola, <?php echo htmlspecialchars(explode(' ', $usuario_nombre)[0], ENT_QUOTES, 'UTF-8'); ?></span>
             <?php else: ?>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
@@ -171,13 +189,13 @@ $featuredProducts = array_slice($products, 0, 4);
             <?php endif; ?>
           </button>
           <div class="account-dropdown">
-            <?php if ($usuarioNombre): ?>
+            <?php if ($usuario_nombre): ?>
               <div class="account-user-info">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                <span><?php echo htmlspecialchars($usuarioNombre, ENT_QUOTES, 'UTF-8'); ?></span>
+                <span><?php echo htmlspecialchars($usuario_nombre, ENT_QUOTES, 'UTF-8'); ?></span>
               </div>
               <a href="Frontend/logout.php" class="account-btn-dropdown account-btn-logout">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
